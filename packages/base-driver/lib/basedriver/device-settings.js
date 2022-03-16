@@ -1,3 +1,5 @@
+// @ts-check
+
 import _ from 'lodash';
 import log from './logger';
 import { node, util } from '@appium/support';
@@ -7,6 +9,11 @@ const MAX_SETTINGS_SIZE = 20 * 1024 * 1024; // 20 MB
 
 class DeviceSettings {
 
+  /**
+   *
+   * @param {any} [defaultSettings]
+   * @param {import('@appium/types').SettingsUpdater?} [onSettingsUpdate]
+   */
   constructor (defaultSettings = {}, onSettingsUpdate = null) {
     this._settings = Object.assign({}, defaultSettings);
     this.onSettingsUpdate = onSettingsUpdate;
