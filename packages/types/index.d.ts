@@ -1,9 +1,17 @@
-import {Method as _Method} from 'axios';
-import {Logger} from 'npmlog';
-import {Server} from 'http';
-export interface Driver {
+import { Method as _Method } from 'axios';
+import { EventEmitter } from 'events';
+import { Server } from 'http';
+import { Logger } from 'npmlog';
+export interface Driver
+  extends SessionCommands,
+    LogCommands,
+    FindCommands,
+    SettingsCommands,
+    TimeoutCommands,
+    EventCommands,
+    SessionHandler<[string, any], void> {
   // fields
-  sessionId: string;
+  sessionId: string | null;
   opts: DriverOpts;
   initialOpts: DriverOpts;
   caps?: Record<string, any>;
@@ -19,24 +27,20 @@ export interface Driver {
   webLocatorStrategies: string[];
   settings: DeviceSettings;
   protocol?: string;
-  supportedLogTypes: Record<string, LogType<Driver>>;
-
-  driverData: any;
+  driverData?: any;
   isCommandsQueueEnabled: boolean;
-
+  eventEmitter: EventEmitter;
   eventHistory: EventHistory;
-
   server?: AppiumServer;
   serverHost?: string;
   serverPort?: number;
   serverPath?: string;
-
-  isW3CProtocol(): boolean;
-  isMjsonwpProtocol(): boolean;
-  log: object;
+  log: AppiumLogger;
   desiredCapConstraints: Constraints;
 
   // non-command methods
+  isW3CProtocol(): boolean;
+  isMjsonwpProtocol(): boolean;
   onUnexpectedShutdown(handler: () => any): void;
   logEvent(eventName: string): void;
   getStatus(): Promise<{}>;
@@ -48,48 +52,18 @@ export interface Driver {
   executeCommand(cmd: string, ...args: any[]): Promise<any>;
   startUnexpectedShutdown(err?: Error): Promise<void>;
   validateLocatorStrategy(strategy: string, webContext?: boolean): void;
-  proxyActive(): boolean;
-  getProxyAvoidList(sessionId: string): [string, RegExp][];
-  canProxy(): boolean;
+  proxyActive(sessionId?: string): boolean;
+  getProxyAvoidList(sessionId?: string): [string, RegExp][];
+  canProxy(sessionId?: string): boolean;
   proxyRouteIsAvoided(sessionId: string, method: string, url: string): boolean;
   addManagedDriver(driver: Driver): void;
   getManagedDrivers(): Driver[];
   clearNewCommandTimeout(): Promise<void>;
   startNewCommandTimeout(): Promise<void>;
 
-  setNewCommandTimeout?(ms: number): void;
-
-  setImplicitWait?(ms: number): void;
-  implicitWaitForCondition(condition: () => Promise<any>): Promise<unknown>;
-
   // Commands
-  findElOrEls(
-    strategy: string,
-    selector: string,
-    mult: boolean,
-    context: string,
-  ): Promise<Element | Element[]>;
-  newCommandTimeout(ms: number): Promise<void>;
-  getLogTypes(): Promise<string[]>;
-  getLog(logType: string): Promise<{}[]>;
 
   // WebDriver
-  createSession(
-    jwpCaps: any,
-    jwpReqCaps: any,
-    w3cCaps: any,
-  ): Promise<[string, any]>;
-  deleteSession(sessionId?: string): Promise<void>;
-  getSessions(): Promise<{id: string; capabilities: {}}[]>;
-  getSession(): Promise<{}>;
-  getTimeouts(): Promise<Record<string, number>>;
-  timeouts(
-    type: string,
-    ms: number,
-    script: number,
-    pageLoad: number,
-    implicit: number,
-  ): Promise<void>;
   setUrl?(url: string): Promise<void>;
   getUrl?(): Promise<string>;
   back?(): Promise<void>;
@@ -112,18 +86,6 @@ export interface Driver {
   minimizeWindow?(): Promise<Rect>;
   fullScreenWindow?(): Promise<Rect>;
   active?(): Promise<Element>;
-  findElement(strategy: string, selector: string): Promise<Element>;
-  findElements(strategy: string, selector: string): Promise<Element[]>;
-  findElementFromElement(
-    strategy: string,
-    selector: string,
-    elementId: string,
-  ): Promise<Element>;
-  findElementsFromElement(
-    strategy: string,
-    selector: string,
-    elementId: string,
-  ): Promise<Element[]>;
   elementSelected?(elementId: string): Promise<boolean>;
   getAttribute?(name: string, elementId: string): Promise<string | null>;
   getProperty?(name: string, elementId: string): Promise<string | null>;
@@ -136,7 +98,6 @@ export interface Driver {
   click?(elementId: string): Promise<void>;
   clear?(elementId: string): Promise<void>;
   setValue?(text: string, elementId: string): Promise<void>;
-  getPageSource?(): Promise<string>;
   execute?(script: string, args: unknown[]): Promise<unknown>;
   executeAsync?(script: string, args: unknown[]): Promise<unknown>;
   getCookies?(): Promise<Cookie[]>;
@@ -244,11 +205,7 @@ export interface Driver {
   ): Promise<Record<string, unknown>>;
   setValueImmediate?(value: string, elementId: string): Promise<void>;
   replaceValue?(value: string, elementId: string): Promise<void>;
-  updateSettings(newSettings: Record<string, unknown>): Promise<void>;
-  getSettings(): Promise<Record<string, unknown>>;
   receiveAsyncResponse?(response: unknown): Promise<void>;
-  getLogEvents(type?: string | string[]): EventHistory | Record<string, number>;
-  logCustomEvent(vendor: string, event: string): void;
   setClipboard?(
     content: string,
     contentType?: string,
@@ -258,7 +215,6 @@ export interface Driver {
 
   // JSONWP
   asyncScriptTimeout?(ms: number): Promise<void>;
-  implicitWait(ms: number): Promise<void>;
   getWindowSize?(): Promise<Size>;
   getLocation?(elementId: string): Promise<Position>;
   getLocationInView?(elementId: string): Promise<Position>;
@@ -498,7 +454,6 @@ export interface EventHistoryCommand {
   endTime: number;
 }
 export type HTTPMethod = _Method;
-export type Constructor<T = {}> = new (...args: any[]) => T;
 
 export interface AppiumLogger {
   unwrap(): Logger;
@@ -514,20 +469,20 @@ export interface AppiumLogger {
   errorAndThrow: (...args: any[]) => never;
 }
 
-
 export type AppiumServer = Server & {
-  close: () => Promise<void>
+  close: () => Promise<void>;
 };
 
 export interface TimeoutCommands {
   timeouts(
     type: string,
-    ms: number,
-    script: number,
-    pageLoad: number,
-    implicit: number,
+    ms: number | string,
+    script?: number,
+    pageLoad?: number,
+    implicit?: number | string,
   ): Promise<void>;
   setNewCommandTimeout(ms: number): void;
+  implicitWait(ms: number | string): Promise<void>;
   setImplicitWait(ms: number): void;
   implicitWaitForCondition(condition: () => Promise<any>): Promise<unknown>;
   getTimeouts(): Promise<Record<string, number>>;
@@ -538,6 +493,7 @@ export interface TimeoutCommands {
   scriptTimeoutW3C(ms: number): Promise<void>;
   scriptTimeoutMJSONWP(ms: number): Promise<void>;
   newCommandTimeout(ms: number): Promise<void>;
+  parseTimeoutArgument(ms: number | string): number;
 }
 
 export interface EventCommands {
@@ -582,6 +538,7 @@ export interface FindCommands {
 }
 
 export interface LogCommands {
+  supportedLogTypes: Record<string, LogType<Driver>>;
   getLogTypes(): Promise<string[]>;
   getLog<T>(logType: LogType<T>): Promise<any[]>;
 }
@@ -589,4 +546,15 @@ export interface LogCommands {
 export interface SettingsCommands {
   updateSettings: (settings: Record<string, any>) => Promise<void>;
   getSettings(): Promise<Record<string, any>>;
+}
+
+export interface SessionHandler<CreateResult, DeleteResult> {
+  createSession(
+    w3cCaps1: any,
+    w3cCaps2?: any,
+    w3cCaps?: any,
+    driverData?: any[],
+  ): Promise<CreateResult>;
+
+  deleteSession(sessionId?: string, driverData?: any[]): Promise<DeleteResult>;
 }
