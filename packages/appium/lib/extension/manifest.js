@@ -1,4 +1,3 @@
-// @ts-check
 
 /**
  * Module containing {@link Manifest} which handles reading & writing of extension config files.
@@ -516,20 +515,21 @@ export class Manifest {
  * Main class/constructor of third-party plugin
  *
  * Referenced by {@link CommonData.mainClass}
- * @typedef { {pluginName: string} & import('type-fest').Class<unknown> & ExtClassStaticMembers} PluginClass
+ * @typedef { {pluginName: string, onUnexpectedShutdown?: (driver: import('@appium/types').Driver, cause: Error) => void} & import('type-fest').Class<any> & ExtClassStaticMembers} PluginClass
  */
 
 /**
  * Main class/constructor of third-party driver
  *
  * Referenced by {@link CommonData.mainClass}
- * @typedef { {driverName: string} & import('type-fest').Class<unknown> & ExtClassStaticMembers } DriverClass
+ * @typedef { {driverName: string} & import('type-fest').Class<import('@appium/types').Driver> & ExtClassStaticMembers } DriverClass
  */
 
 /**
  * @typedef ExtClassStaticMembers
  * @property {UpdateServerFn} [updateServer]
- * @property {import('@appium/base-driver').MethodMap} [newMethodMap]
+ * @property {import('@appium/types').MethodMap} [newMethodMap]
+ * @property {string} baseVersion
  */
 
 /**

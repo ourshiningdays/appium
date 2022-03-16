@@ -1,4 +1,3 @@
-// @ts-check
 
 import _ from 'lodash';
 import logger from './logger';
@@ -39,21 +38,24 @@ const inspect = _.flow(
  * @param {Object} w3cCapabilities
  * @param {Object} constraints
  * @param {Object} defaultCapabilities
+ * @returns {ParsedDriverCaps|InvalidCaps}
  */
 function parseCapsForInnerDriver (jsonwpCapabilities, w3cCapabilities, constraints = {}, defaultCapabilities = {}) {
   // Check if the caller sent JSONWP caps, W3C caps, or both
   const hasW3CCaps = _.isPlainObject(w3cCapabilities) &&
     (_.has(w3cCapabilities, 'alwaysMatch') || _.has(w3cCapabilities, 'firstMatch'));
   const hasJSONWPCaps = _.isPlainObject(jsonwpCapabilities);
-  let desiredCaps = {};
+  let desiredCaps = /** @type {ParsedDriverCaps['desiredCaps']} */({});
+  /** @type {ParsedDriverCaps['processedW3CCapabilities']} */
   let processedW3CCapabilities = null;
+  /** @type {ParsedDriverCaps['processedJsonwpCapabilities']} */
   let processedJsonwpCapabilities = null;
 
   if (!hasW3CCaps) {
-    return {
+    return /** @type {InvalidCaps} */({
       protocol: PROTOCOLS.W3C,
       error: new Error('W3C capabilities should be provided'),
-    };
+    });
   }
 
   const {W3C} = PROTOCOLS;
@@ -93,7 +95,7 @@ function parseCapsForInnerDriver (jsonwpCapabilities, w3cCapabilities, constrain
       }
     }
     if (hasJSONWPCaps) {
-      jsonwpCapabilities = Object.assign({}, removeAppiumPrefixes(defaultCapabilities), jsonwpCapabilities);
+      jsonwpCapabilities = {...removeAppiumPrefixes(defaultCapabilities), ...jsonwpCapabilities};
     }
   }
 
@@ -110,13 +112,13 @@ function parseCapsForInnerDriver (jsonwpCapabilities, w3cCapabilities, constrain
       desiredCaps = processCapabilities(w3cCapabilities, constraints, true);
     } catch (error) {
       logger.info(`Could not parse W3C capabilities: ${error.message}`);
-      return {
+      return /** @type {InvalidCaps} */({
         desiredCaps,
         processedJsonwpCapabilities,
         processedW3CCapabilities,
         protocol,
         error,
-      };
+      });
     }
 
     // Create a new w3c capabilities payload that contains only the matching caps in `alwaysMatch`
@@ -126,7 +128,7 @@ function parseCapsForInnerDriver (jsonwpCapabilities, w3cCapabilities, constrain
     };
   }
 
-  return {desiredCaps, processedJsonwpCapabilities, processedW3CCapabilities, protocol};
+  return /** @type {ParsedDriverCaps} */({desiredCaps, processedJsonwpCapabilities, processedW3CCapabilities, protocol});
 }
 
 /**
@@ -218,3 +220,26 @@ export {
   inspect, parseCapsForInnerDriver, insertAppiumPrefixes,
   getPackageVersion, pullSettings, removeAppiumPrefixes
 };
+
+/**
+ * @typedef { {[key: string]: any, platformName: string, automationName: string} } DesiredCaps
+ */
+
+/**
+ * @todo protocol is more specific
+ * @typedef ParsedDriverCaps
+ * @property {DesiredCaps} desiredCaps
+ * @property {string} protocol
+ * @property {Record<string,any>?} processedJsonwpCapabilities
+ * @property {Record<string,any>?} processedW3CCapabilities
+ */
+
+/**
+ * @todo protocol is more specific
+ * @typedef InvalidCaps
+ * @property {Error} error
+ * @property {string} protocol
+ * @property {DesiredCaps?} [desiredCaps]
+ * @property {Record<string,any>?} [processedJsonwpCapabilities]
+ * @property {Record<string,any>?} [processedW3CCapabilities]
+ */

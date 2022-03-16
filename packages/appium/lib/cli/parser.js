@@ -1,4 +1,3 @@
-// @ts-check
 
 import { fs } from '@appium/support';
 import { ArgumentParser } from 'argparse';

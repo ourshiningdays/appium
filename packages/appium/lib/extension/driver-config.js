@@ -1,4 +1,3 @@
-// @ts-check
 
 import _ from 'lodash';
 import { DRIVER_TYPE } from '../constants';
@@ -136,7 +135,7 @@ export class DriverConfig extends ExtensionConfig {
    /**
    * Given capabilities, find a matching driver within the config. Load its class and return it along with version and driver name.
    * @param { { automationName: string, platformName: string } } caps
-   * @returns { { driver: import('./manifest').DriverClass, version: string, driverName: string } }
+   * @returns {MatchedDriver}
    */
    findMatchingDriver ({automationName, platformName}) {
      if (!_.isString(platformName)) {
@@ -228,3 +227,10 @@ export class DriverConfig extends ExtensionConfig {
  * @typedef {import('./extension-config').ExtName<T>} ExtName
  */
 
+
+/**
+ * @typedef MatchedDriver
+ * @property {import('./manifest').DriverClass} driver
+ * @property {string} version
+ * @property {string} driverName
+ */

@@ -1,4 +1,3 @@
-// @ts-check
 
 import _ from 'lodash';
 import { USE_ALL_PLUGINS } from '../constants';

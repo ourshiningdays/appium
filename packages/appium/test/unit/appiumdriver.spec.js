@@ -1,3 +1,5 @@
+// @ts-check
+
 // transpile:mocha
 
 import { BaseDriver } from '@appium/base-driver';
@@ -10,7 +12,7 @@ import { finalizeSchema, registerSchema, resetSchema } from '../../lib/schema/sc
 import { insertAppiumPrefixes, removeAppiumPrefixes } from '../../lib/utils';
 import { BASE_CAPS, W3C_CAPS, W3C_PREFIXED_CAPS } from '../helpers';
 
-const SESSION_ID = 1;
+const SESSION_ID = '1';
 
 describe('AppiumDriver', function () {
   /** @type {sinon.SinonSandbox} */
@@ -27,11 +29,18 @@ describe('AppiumDriver', function () {
   });
 
   describe('instance method', function () {
+    let fakeDriver;
+
+    /**
+     *
+     * @param {*} appiumArgs
+     * @param {*} DriverClass
+     * @returns {[AppiumDriver, sinon.SinonMock]}
+     */
     function getDriverAndFakeDriver (appiumArgs = {}, DriverClass = FakeDriver) {
       const appium = new AppiumDriver(appiumArgs);
-      const fakeDriver = new DriverClass();
+      fakeDriver = new DriverClass();
       const mockFakeDriver = sandbox.mock(fakeDriver);
-      mockFakeDriver._fakeDriver = fakeDriver;
       const mockedDriverReturnerClass = function Driver () {
         return fakeDriver;
       };
@@ -50,6 +59,7 @@ describe('AppiumDriver', function () {
     describe('createSession', function () {
       /** @type {AppiumDriver} */
       let appium;
+      /** @type {sinon.SinonMock} */
       let mockFakeDriver;
       beforeEach(function () {
         [appium, mockFakeDriver] = getDriverAndFakeDriver();
@@ -178,7 +188,7 @@ describe('AppiumDriver', function () {
         [appium, mockFakeDriver] = getDriverAndFakeDriver(args, ArgsDriver);
         const {value} = await appium.createSession(undefined, undefined, W3C_CAPS);
         try {
-          mockFakeDriver._fakeDriver.cliArgs.should.eql({randomArg: 1234});
+          fakeDriver.cliArgs.should.eql({randomArg: 1234});
         } finally {
           await appium.deleteSession(value[0]);
         }
@@ -263,6 +273,7 @@ describe('AppiumDriver', function () {
     describe('sessionExists', function () {
     });
     describe('attachUnexpectedShutdownHandler', function () {
+      /** @type {AppiumDriver} */
       let appium;
       let mockFakeDriver;
       beforeEach(function () {
@@ -294,12 +305,15 @@ describe('AppiumDriver', function () {
     describe('createPluginInstances', function () {
       class NoArgsPlugin {}
       NoArgsPlugin.pluginName = 'noargs';
+      NoArgsPlugin.baseVersion = '1.0';
 
       class ArgsPlugin {}
       ArgsPlugin.pluginName = 'args';
+      ArgsPlugin.baseVersion = '1.0';
 
       class ArrayArgPlugin {}
       ArrayArgPlugin.pluginName = 'arrayarg';
+      ArrayArgPlugin.baseVersion = '1.0';
 
       beforeEach(function () {
         resetSchema();
@@ -332,7 +346,7 @@ describe('AppiumDriver', function () {
           const appium = new AppiumDriver({});
           appium.pluginClasses = [NoArgsPlugin, ArgsPlugin];
           for (const plugin of appium.createPluginInstances()) {
-            should.not.exist(plugin.cliArgs);
+            chai.expect(plugin.cliArgs).not.to.exist;
           }
         });
       });
@@ -342,7 +356,7 @@ describe('AppiumDriver', function () {
           const appium = new AppiumDriver({plugin: {[ArgsPlugin.pluginName]: {randomArg: 2000}}});
           appium.pluginClasses = [NoArgsPlugin, ArgsPlugin];
           for (const plugin of appium.createPluginInstances()) {
-            should.not.exist(plugin.cliArgs);
+            chai.expect(plugin.cliArgs).not.to.exist;
           }
         });
 
@@ -351,7 +365,7 @@ describe('AppiumDriver', function () {
             const appium = new AppiumDriver({plugin: {[ArrayArgPlugin.pluginName]: {arr: []}}});
             appium.pluginClasses = [NoArgsPlugin, ArgsPlugin, ArrayArgPlugin];
             for (const plugin of appium.createPluginInstances()) {
-              should.not.exist(plugin.cliArgs);
+              chai.expect(plugin.cliArgs).not.to.exist;
             }
           });
         });

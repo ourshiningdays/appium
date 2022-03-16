@@ -1,4 +1,3 @@
-// @ts-check
 
 import betterAjvErrors from '@sidvind/better-ajv-errors';
 import { lilconfig } from 'lilconfig';
@@ -186,7 +185,7 @@ export function normalizeConfig (config) {
  * @property {string} [filepath] - The path to the config file, if found
  * @property {boolean} [isEmpty] - If `true`, the config file exists but is empty
  * @property {NormalizedAppiumConfig} [config] - The parsed configuration
- * @property {string|betterAjvErrors.IOutputError[]} [reason] - Human-readable error messages and suggestions. If the `pretty` option is `true`, this will be a nice string to print.
+ * @property {string|import('@sidvind/better-ajv-errors').IOutputError[]} [reason] - Human-readable error messages and suggestions. If the `pretty` option is `true`, this will be a nice string to print.
  */
 
 /**

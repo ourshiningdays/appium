@@ -1,4 +1,3 @@
-// @ts-check
 
 import _ from 'lodash';
 import {ExtensionConfig} from './extension-config';

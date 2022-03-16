@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 
 // transpile:main
-// @ts-check
 
 import { init as logsinkInit } from './logsink'; // this import needs to come first since it sets up global npmlog
 import logger from './logger'; // logger needs to remain second
@@ -120,7 +119,7 @@ function getServerUpdaters (driverClasses, pluginClasses) {
  * Makes a big `MethodMap` from all the little `MethodMap`s in the extensions
  * @param {DriverClass[]} driverClasses
  * @param {PluginClass[]} pluginClasses
- * @returns {import('@appium/base-driver').MethodMap}
+ * @returns {import('@appium/types').MethodMap}
  */
 function getExtraMethodMap (driverClasses, pluginClasses) {
   return [...driverClasses, ...pluginClasses].reduce(
